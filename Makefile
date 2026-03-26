@@ -1,4 +1,4 @@
-.PHONY: test build run-auth run-task run-gateway dev-up dev-down docker-up docker-down schema-check
+.PHONY: test build run-auth run-task run-gateway dev-up dev-down docker-up docker-down schema-check db-backup-now db-backup-list db-restore db-restore-clean
 
 test:
 	go test ./...
@@ -26,6 +26,7 @@ docker-up:
 	@echo "  Auth API:     http://localhost:8081"
 	@echo "  Task API:     http://localhost:8082"
 	@echo "  Postgres:     localhost:5432"
+	@echo "  Backups dir:  ./backups"
 	@echo ""
 	@echo "Metrics:"
 	@echo "  Gateway:      http://localhost:8080/metrics"
@@ -36,6 +37,25 @@ docker-up:
 
 docker-down:
 	docker compose down -v
+
+db-backup-now:
+	docker compose run --rm db-backup /bin/sh /scripts/db_backup.sh
+
+db-backup-list:
+	ls -lh backups
+
+db-restore:
+	@test -n "$(BACKUP)" || (echo "Usage: make db-restore BACKUP=backups/task_tracker_YYYYMMDD_HHMMSS.sql.gz"; exit 1)
+	gzip -dc "$(BACKUP)" | docker compose exec -T postgres psql -U postgres -d task_tracker
+
+db-restore-clean:
+	@test -n "$(BACKUP)" || (echo "Usage: make db-restore-clean BACKUP=backups/task_tracker_YYYYMMDD_HHMMSS.sql.gz"; exit 1)
+	docker compose up -d postgres
+	docker compose stop auth-service task-service gateway db-backup || true
+	docker compose exec -T postgres psql -U postgres -d task_tracker -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	gzip -dc "$(BACKUP)" | docker compose exec -T postgres psql -U postgres -d task_tracker
+	docker compose up -d db-backup auth-service task-service gateway
+	@echo "Restore completed from $(BACKUP)"
 
 schema-check:
 	go test ./internal/db -run TestMigrationSchemaContract

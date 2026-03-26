@@ -11,5 +11,8 @@ coverage.out
 # Env
 .env
 
+# Backups
+backups/*.sql.gz
+
 # OS
 .DS_Store

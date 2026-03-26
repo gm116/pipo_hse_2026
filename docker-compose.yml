@@ -14,6 +14,27 @@ services:
       timeout: 3s
       retries: 10
 
+  db-backup:
+    image: postgres:16-alpine
+    container_name: task-tracker-backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: task_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      BACKUP_INTERVAL_SECONDS: 86400
+      BACKUP_RETENTION_DAYS: 7
+      BACKUP_FILE_PREFIX: task_tracker
+      BACKUP_RUN_ON_START: "false"
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "/scripts/db_backup_loop.sh"]
+
   auth-service:
     build:
       context: .

@@ -46,6 +46,23 @@ make build
   - `http://localhost:8081/metrics`
   - `http://localhost:8082/metrics`
 
+## Бэкапы PostgreSQL
+- В docker-compose `db-backup`.
+- Делает `pg_dump` в `./backups`:
+  - далее каждые 24 часа (`BACKUP_INTERVAL_SECONDS=86400`);
+  - хранение 7 дней (`BACKUP_RETENTION_DAYS=7`).
+  - запуск на старте отключен (`BACKUP_RUN_ON_START=false`).
+
+Команды:
+```bash
+make db-backup-now           # сделать бэкап сразу
+make db-backup-list          # список файлов в ./backups
+make db-restore-clean BACKUP=backups/task_tracker_YYYYMMDD_HHMMSS.sql.gz 
+```
+
+`db-restore-clean` - сама остановит сервисы, очистит схему `public`,
+загрузит дамп и поднимет сервисы обратно.
+
 ## Миграции и схема
 - Миграции: [`internal/db/migrations`](internal/db/migrations)
 - При старте сервисов миграции применяются автоматически.
