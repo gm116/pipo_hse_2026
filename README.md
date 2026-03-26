@@ -4,8 +4,10 @@
 - `auth-service` (`:8081`) - регистрация, логин, профиль пользователя, выдача JWT.
 - `task-service` (`:8082`) - CRUD задач, доступ только к задачам текущего пользователя.
 - `gateway` (`:8080`) - единая точка входа, прокси к сервисам, frontend и Swagger.
+- `caddy` (`:80/:443`) - внешний reverse proxy для прода.
 
 ## Архитектура
+- `caddy -> gateway`
 - `gateway -> auth-service`
 - `gateway -> task-service`
 - `auth-service/task-service -> PostgreSQL`
@@ -26,8 +28,10 @@ cp .env.example .env
 docker compose up --build -d
 ```
 После запуска:
-- UI: `http://localhost:8080`
-- Swagger: `http://localhost:8080/docs`
+- UI через Caddy: `http://localhost`
+- Swagger через Caddy: `http://localhost/docs`
+- Прямой gateway (внутренний вход): `http://localhost:8080`
+
 
 ### Вариант 2: локально (если `go` в PATH)
 

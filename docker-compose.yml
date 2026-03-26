@@ -88,3 +88,22 @@ services:
       - task-service
     ports:
       - "8080:8080"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: task-tracker-caddy
+    depends_on:
+      - gateway
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployments/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

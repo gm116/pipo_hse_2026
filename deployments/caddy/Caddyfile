@@ -1,0 +1,4 @@
+{$PUBLIC_DOMAIN::80} {
+	reverse_proxy gateway:8080
+	encode gzip
+}

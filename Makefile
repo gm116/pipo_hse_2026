@@ -19,6 +19,10 @@ run-gateway:
 
 docker-up:
 	docker compose up --build -d
+	@DOMAIN=$$(grep -E '^PUBLIC_DOMAIN=' .env 2>/dev/null | cut -d= -f2-); [ -n "$$DOMAIN" ] || DOMAIN=:80; \
+	echo ""; \
+	echo "Public entrypoint (Caddy):"; \
+	if [ "$$DOMAIN" = ":80" ]; then echo "  http://localhost"; else echo "  https://$$DOMAIN"; fi
 	@echo ""
 	@echo "Services are up:"
 	@echo "  Gateway:      http://localhost:8080"
