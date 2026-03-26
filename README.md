@@ -22,6 +22,9 @@
 cp .env.example .env
 ```
 И задать свои значения в `.env` (`POSTGRES_PASSWORD`, `JWT_SECRET`, `DATABASE_URL`).
+Для доступа к Swagger через Caddy:
+- `CADDY_DOCS_POLICY=block_docs` - закрыть `/docs` снаружи
+- `CADDY_DOCS_POLICY=allow_docs` - открыть `/docs` снаружи
 
 ### Вариант 1: Docker Compose
 ```bash

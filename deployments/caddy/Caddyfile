@@ -1,4 +1,21 @@
+(block_docs) {
+	@blocked_docs {
+		path /docs /docs/*
+	}
+	respond @blocked_docs 403
+}
+
+(allow_docs) {
+}
+
 {$PUBLIC_DOMAIN::80} {
+	@blocked_metrics {
+		path /metrics /api/auth/metrics /api/tasks/metrics
+	}
+	respond @blocked_metrics 403
+
+	import {$CADDY_DOCS_POLICY:block_docs}
+
 	reverse_proxy gateway:8080
 	encode gzip
 }

@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -51,7 +51,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
 
   task-service:
     build:
@@ -68,7 +68,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
 
   gateway:
     build:
@@ -87,7 +87,7 @@ services:
       - auth-service
       - task-service
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   caddy:
     image: caddy:2-alpine
@@ -96,6 +96,7 @@ services:
       - gateway
     environment:
       PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-:80}
+      CADDY_DOCS_POLICY: ${CADDY_DOCS_POLICY:-block_docs}
     ports:
       - "80:80"
       - "443:443"
