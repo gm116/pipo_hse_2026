@@ -3,13 +3,13 @@ services:
     image: postgres:16-alpine
     container_name: task-tracker-postgres
     environment:
-      POSTGRES_DB: task_tracker
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-task_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d task_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -23,13 +23,13 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_DB: task_tracker
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      BACKUP_INTERVAL_SECONDS: 86400
-      BACKUP_RETENTION_DAYS: 7
-      BACKUP_FILE_PREFIX: task_tracker
-      BACKUP_RUN_ON_START: "false"
+      POSTGRES_DB: ${POSTGRES_DB:-task_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      BACKUP_FILE_PREFIX: ${BACKUP_FILE_PREFIX:-task_tracker}
+      BACKUP_RUN_ON_START: ${BACKUP_RUN_ON_START:-false}
     volumes:
       - ./scripts:/scripts:ro
       - ./backups:/backups
@@ -44,9 +44,9 @@ services:
       APP_NAME: auth-service
       PORT: 8081
       LOG_LEVEL: INFO
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/task_tracker?sslmode=disable
-      JWT_SECRET: dev-secret-change-me
-      TOKEN_TTL_HOURS: 24
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      TOKEN_TTL_HOURS: ${TOKEN_TTL_HOURS:-24}
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,8 +62,8 @@ services:
       APP_NAME: task-service
       PORT: 8082
       LOG_LEVEL: INFO
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/task_tracker?sslmode=disable
-      JWT_SECRET: dev-secret-change-me
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,8 +79,8 @@ services:
       APP_NAME: gateway
       PORT: 8080
       LOG_LEVEL: INFO
-      AUTH_SERVICE_URL: http://auth-service:8081
-      TASK_SERVICE_URL: http://task-service:8082
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8081}
+      TASK_SERVICE_URL: ${TASK_SERVICE_URL:-http://task-service:8082}
       WEB_DIR: /app/web
       OPENAPI_PATH: /app/api/openapi.yaml
     depends_on:

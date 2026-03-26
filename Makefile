@@ -9,13 +9,13 @@ build:
 	go build ./cmd/gateway
 
 run-auth:
-	APP_NAME=auth-service PORT=8081 go run ./cmd/auth-service
+	@set -a; [ -f .env ] && . ./.env; set +a; APP_NAME=auth-service PORT=8081 go run ./cmd/auth-service
 
 run-task:
-	APP_NAME=task-service PORT=8082 go run ./cmd/task-service
+	@set -a; [ -f .env ] && . ./.env; set +a; APP_NAME=task-service PORT=8082 go run ./cmd/task-service
 
 run-gateway:
-	APP_NAME=gateway PORT=8080 AUTH_SERVICE_URL=http://localhost:8081 TASK_SERVICE_URL=http://localhost:8082 go run ./cmd/gateway
+	@set -a; [ -f .env ] && . ./.env; set +a; APP_NAME=gateway PORT=8080 AUTH_SERVICE_URL=$${AUTH_SERVICE_URL:-http://localhost:8081} TASK_SERVICE_URL=$${TASK_SERVICE_URL:-http://localhost:8082} go run ./cmd/gateway
 
 docker-up:
 	docker compose up --build -d
@@ -39,7 +39,8 @@ docker-down:
 	docker compose down -v
 
 db-backup-now:
-	docker compose run --rm db-backup /bin/sh /scripts/db_backup.sh
+	docker compose up -d postgres
+	docker compose run --rm -T --entrypoint /scripts/db_backup.sh db-backup
 
 db-backup-list:
 	ls -lh backups

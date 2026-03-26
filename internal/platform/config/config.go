@@ -36,8 +36,8 @@ func LoadAuthService() AuthService {
 		AppName:     getenv("APP_NAME", "auth-service"),
 		Port:        getenv("PORT", "8081"),
 		LogLevel:    getenv("LOG_LEVEL", "INFO"),
-		DatabaseURL: getenv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/task_tracker?sslmode=disable"),
-		JWTSecret:   getenv("JWT_SECRET", "dev-secret-change-me"),
+		DatabaseURL: getenv("DATABASE_URL", ""),
+		JWTSecret:   getenv("JWT_SECRET", ""),
 		TokenTTL:    time.Duration(getenvInt("TOKEN_TTL_HOURS", 24)) * time.Hour,
 	}
 }
@@ -47,8 +47,8 @@ func LoadTaskService() TaskService {
 		AppName:     getenv("APP_NAME", "task-service"),
 		Port:        getenv("PORT", "8082"),
 		LogLevel:    getenv("LOG_LEVEL", "INFO"),
-		DatabaseURL: getenv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/task_tracker?sslmode=disable"),
-		JWTSecret:   getenv("JWT_SECRET", "dev-secret-change-me"),
+		DatabaseURL: getenv("DATABASE_URL", ""),
+		JWTSecret:   getenv("JWT_SECRET", ""),
 	}
 }
 

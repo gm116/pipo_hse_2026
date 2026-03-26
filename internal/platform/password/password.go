@@ -1,52 +1,29 @@
 package password
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/base64"
 	"fmt"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-const saltSize = 16
+const cost = bcrypt.DefaultCost
 
 func Hash(raw string) (string, error) {
-	salt := make([]byte, saltSize)
-	if _, err := rand.Read(salt); err != nil {
-		return "", fmt.Errorf("generate salt: %w", err)
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", fmt.Errorf("password is empty")
 	}
-	h := digest(salt, []byte(raw))
-	return base64.RawURLEncoding.EncodeToString(salt) + "." + base64.RawURLEncoding.EncodeToString(h), nil
+	hash, err := bcrypt.GenerateFromPassword([]byte(raw), cost)
+	if err != nil {
+		return "", fmt.Errorf("bcrypt hash: %w", err)
+	}
+	return string(hash), nil
 }
 
 func Compare(stored, raw string) bool {
-	parts := splitTwo(stored)
-	if len(parts) != 2 {
+	if strings.TrimSpace(stored) == "" || strings.TrimSpace(raw) == "" {
 		return false
 	}
-	salt, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return false
-	}
-	hash, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return false
-	}
-	candidate := digest(salt, []byte(raw))
-	return subtle.ConstantTimeCompare(hash, candidate) == 1
-}
-
-func digest(salt, pass []byte) []byte {
-	buf := append(append([]byte{}, salt...), pass...)
-	h := sha256.Sum256(buf)
-	return h[:]
-}
-
-func splitTwo(s string) []string {
-	for i := 0; i < len(s); i++ {
-		if s[i] == '.' {
-			return []string{s[:i], s[i+1:]}
-		}
-	}
-	return nil
+	return bcrypt.CompareHashAndPassword([]byte(stored), []byte(raw)) == nil
 }

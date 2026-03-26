@@ -22,6 +22,14 @@ import (
 func main() {
 	cfg := config.LoadAuthService()
 	logger := logging.New(cfg.LogLevel)
+	if cfg.DatabaseURL == "" {
+		logger.Error("DATABASE_URL is required")
+		os.Exit(1)
+	}
+	if cfg.JWTSecret == "" {
+		logger.Error("JWT_SECRET is required")
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	pool, err := postgres.Open(ctx, cfg.DatabaseURL)

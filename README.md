@@ -15,6 +15,12 @@
 - `http://localhost:8080/docs`
 
 ## Быстрый запуск
+Перед запуском нужно заполнить .env:
+```bash
+cp .env.example .env
+```
+И задать свои значения в `.env` (`POSTGRES_PASSWORD`, `JWT_SECRET`, `DATABASE_URL`).
+
 ### Вариант 1: Docker Compose
 ```bash
 docker compose up --build -d
@@ -26,7 +32,8 @@ docker compose up --build -d
 ### Вариант 2: локально (если `go` в PATH)
 
 1. Поднять PostgreSQL
-2. Запустить сервисы в 3 терминалах:
+2. Подготовить `.env` (см. выше)
+3. Запустить сервисы в 3 терминалах:
 ```bash
 make run-auth
 make run-task
