@@ -1,4 +1,4 @@
-.PHONY: test build run-auth run-task run-gateway dev-up dev-down docker-up docker-down schema-check db-backup-now db-backup-list db-restore db-restore-clean
+.PHONY: test build run-auth run-task run-gateway dev-up dev-down docker-up docker-down schema-check sqlc-generate db-backup-now db-backup-list db-restore db-restore-clean
 
 test:
 	go test ./...
@@ -64,6 +64,9 @@ db-restore-clean:
 
 schema-check:
 	go test ./internal/db -run TestMigrationSchemaContract
+
+sqlc-generate:
+	go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0 generate
 
 new-entity:
 	@echo "Usage: make new-entity NAME=Comment FIELDS=text:string,done:bool TABLE=comments"

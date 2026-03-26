@@ -20,6 +20,9 @@ jobs:
       - name: Download modules
         run: go mod download
 
+      - name: Generate SQL code
+        run: go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0 generate
+
       - name: Run tests
         run: go test ./...
 

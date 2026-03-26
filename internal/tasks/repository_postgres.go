@@ -4,119 +4,107 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/fadeedan/pipo_hse_2026/internal/db/sqlcgen"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
-	pool *pgxpool.Pool
+	queries *sqlcgen.Queries
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool}
+	return &PostgresRepository{queries: sqlcgen.New(pool)}
 }
 
 func (r *PostgresRepository) CreateTask(ctx context.Context, userID int64, in CreateTaskInput) (Task, error) {
-	const q = `
-		INSERT INTO tasks(user_id, title, description, status)
-		VALUES($1, $2, $3, $4)
-		RETURNING id, user_id, title, description, status, created_at, updated_at
-	`
-	var t Task
-	err := r.pool.QueryRow(ctx, q, userID, in.Title, in.Description, in.Status).Scan(
-		&t.ID,
-		&t.UserID,
-		&t.Title,
-		&t.Description,
-		&t.Status,
-		&t.CreatedAt,
-		&t.UpdatedAt,
-	)
+	t, err := r.queries.CreateTask(ctx, sqlcgen.CreateTaskParams{
+		UserID:      userID,
+		Title:       in.Title,
+		Description: in.Description,
+		Status:      in.Status,
+	})
 	if err != nil {
 		return Task{}, fmt.Errorf("create task: %w", err)
 	}
-	return t, nil
+	return toTask(t), nil
 }
 
 func (r *PostgresRepository) GetTask(ctx context.Context, userID, taskID int64) (Task, error) {
-	const q = `
-		SELECT id, user_id, title, description, status, created_at, updated_at
-		FROM tasks
-		WHERE id=$1 AND user_id=$2
-	`
-	var t Task
-	err := r.pool.QueryRow(ctx, q, taskID, userID).Scan(&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt)
+	t, err := r.queries.GetTask(ctx, sqlcgen.GetTaskParams{
+		ID:     taskID,
+		UserID: userID,
+	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Task{}, ErrTaskNotFound
 		}
 		return Task{}, fmt.Errorf("get task: %w", err)
 	}
-	return t, nil
+	return toTask(t), nil
 }
 
 func (r *PostgresRepository) UpdateTask(ctx context.Context, userID, taskID int64, in UpdateTaskInput) (Task, error) {
-	const q = `
-		UPDATE tasks
-		SET title=$1, description=$2, status=$3, updated_at=NOW()
-		WHERE id=$4 AND user_id=$5
-		RETURNING id, user_id, title, description, status, created_at, updated_at
-	`
-	var t Task
-	err := r.pool.QueryRow(ctx, q, in.Title, in.Description, in.Status, taskID, userID).Scan(
-		&t.ID,
-		&t.UserID,
-		&t.Title,
-		&t.Description,
-		&t.Status,
-		&t.CreatedAt,
-		&t.UpdatedAt,
-	)
+	t, err := r.queries.UpdateTask(ctx, sqlcgen.UpdateTaskParams{
+		Title:       in.Title,
+		Description: in.Description,
+		Status:      in.Status,
+		ID:          taskID,
+		UserID:      userID,
+	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Task{}, ErrTaskNotFound
 		}
 		return Task{}, fmt.Errorf("update task: %w", err)
 	}
-	return t, nil
+	return toTask(t), nil
 }
 
 func (r *PostgresRepository) DeleteTask(ctx context.Context, userID, taskID int64) error {
-	const q = `DELETE FROM tasks WHERE id=$1 AND user_id=$2`
-	res, err := r.pool.Exec(ctx, q, taskID, userID)
+	rowsAffected, err := r.queries.DeleteTask(ctx, sqlcgen.DeleteTaskParams{
+		ID:     taskID,
+		UserID: userID,
+	})
 	if err != nil {
 		return fmt.Errorf("delete task: %w", err)
 	}
-	if res.RowsAffected() == 0 {
+	if rowsAffected == 0 {
 		return ErrTaskNotFound
 	}
 	return nil
 }
 
 func (r *PostgresRepository) ListTasks(ctx context.Context, userID int64) ([]Task, error) {
-	const q = `
-		SELECT id, user_id, title, description, status, created_at, updated_at
-		FROM tasks
-		WHERE user_id=$1
-		ORDER BY created_at DESC
-	`
-	rows, err := r.pool.Query(ctx, q, userID)
+	items, err := r.queries.ListTasks(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
-	defer rows.Close()
-
-	out := make([]Task, 0)
-	for rows.Next() {
-		var t Task
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("scan task: %w", err)
-		}
-		out = append(out, t)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate tasks: %w", err)
+	out := make([]Task, 0, len(items))
+	for _, item := range items {
+		out = append(out, toTask(item))
 	}
 	return out, nil
+}
+
+func toTask(t sqlcgen.Task) Task {
+	return Task{
+		ID:          t.ID,
+		UserID:      t.UserID,
+		Title:       t.Title,
+		Description: t.Description,
+		Status:      t.Status,
+		CreatedAt:   fromDBTime(t.CreatedAt),
+		UpdatedAt:   fromDBTime(t.UpdatedAt),
+	}
+}
+
+func fromDBTime(ts pgtype.Timestamptz) time.Time {
+	if !ts.Valid {
+		return time.Time{}
+	}
+	return ts.Time
 }

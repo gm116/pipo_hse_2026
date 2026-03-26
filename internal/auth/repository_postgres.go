@@ -4,34 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/fadeedan/pipo_hse_2026/internal/db/sqlcgen"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
-	pool *pgxpool.Pool
+	queries *sqlcgen.Queries
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool}
+	return &PostgresRepository{queries: sqlcgen.New(pool)}
 }
 
 func (r *PostgresRepository) CreateUser(ctx context.Context, p CreateUserParams) (User, error) {
-	const q = `
-		INSERT INTO users(email, name, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id, email, name, password_hash, created_at
-	`
-	var u User
-	err := r.pool.QueryRow(ctx, q, p.Email, p.Name, p.PasswordHash).Scan(
-		&u.ID,
-		&u.Email,
-		&u.Name,
-		&u.PasswordHash,
-		&u.CreatedAt,
-	)
+	u, err := r.queries.CreateUser(ctx, sqlcgen.CreateUserParams{
+		Email:        p.Email,
+		Name:         p.Name,
+		PasswordHash: p.PasswordHash,
+	})
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -39,31 +34,44 @@ func (r *PostgresRepository) CreateUser(ctx context.Context, p CreateUserParams)
 		}
 		return User{}, fmt.Errorf("create user: %w", err)
 	}
-	return u, nil
+	return toUser(u), nil
 }
 
 func (r *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	const q = `SELECT id, email, name, password_hash, created_at FROM users WHERE email = $1`
-	var u User
-	err := r.pool.QueryRow(ctx, q, email).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt)
+	u, err := r.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, fmt.Errorf("get user by email: %w", err)
 	}
-	return u, nil
+	return toUser(u), nil
 }
 
 func (r *PostgresRepository) GetUserByID(ctx context.Context, id int64) (User, error) {
-	const q = `SELECT id, email, name, password_hash, created_at FROM users WHERE id = $1`
-	var u User
-	err := r.pool.QueryRow(ctx, q, id).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt)
+	u, err := r.queries.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, fmt.Errorf("get user by id: %w", err)
 	}
-	return u, nil
+	return toUser(u), nil
+}
+
+func toUser(u sqlcgen.User) User {
+	return User{
+		ID:           u.ID,
+		Email:        u.Email,
+		Name:         u.Name,
+		PasswordHash: u.PasswordHash,
+		CreatedAt:    fromDBTime(u.CreatedAt),
+	}
+}
+
+func fromDBTime(ts pgtype.Timestamptz) time.Time {
+	if !ts.Valid {
+		return time.Time{}
+	}
+	return ts.Time
 }

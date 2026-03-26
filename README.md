@@ -49,6 +49,7 @@ make run-gateway
 
 ## Тесты и сборка
 ```bash
+make sqlc-generate
 make test
 make build
 ```
@@ -79,6 +80,8 @@ make db-restore-clean BACKUP=backups/task_tracker_YYYYMMDD_HHMMSS.sql.gz
 
 ## Миграции и схема
 - Миграции: [`internal/db/migrations`](internal/db/migrations)
+- SQL-запросы: [`internal/db/queries`](internal/db/queries)
+- Сгенерированный DB-код (`sqlc`): [`internal/db/sqlcgen`](internal/db/sqlcgen)
 - При старте сервисов миграции применяются автоматически.
 - Версионирование через номера файлов (`001_...sql`).
 
@@ -96,7 +99,7 @@ make new-entity NAME=Comment FIELDS=text:string,done:bool TABLE=comments
 - `1.3` Тесты: unit + функциональные (`httptest`) для сервисов и gateway.
 - `1.4` Внешняя БД: PostgreSQL.
 - `1.5` Схема создаётся на старте, миграции версионируются.
-- `1.6` Контракт схемы проверяется тестом `TestMigrationSchemaContract`; генератор entity снижает ручную работу при расширении схемы.
+- `1.6` Схема отражается в коде через `sqlc`: `internal/db/queries` + `internal/db/sqlcgen`; при рассинхроне схемы/запроса генерация или сборка падает.
 - `2.1` Логирование: `slog` middleware и события сервисов.
 - `2.2` Метрики: `/metrics` с метриками HTTP-запросов.
 - `3.1` CI/CD: GitHub Actions в [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
