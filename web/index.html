@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="panel auth" id="authPanel">
+      <h1>Task Tracker</h1>
+      <p class="hint">Минимальный интерфейс, API-first, микросервисный backend.</p>
+
+      <div class="grid-two">
+        <form id="registerForm" class="card">
+          <h2>Регистрация</h2>
+          <label>Email
+            <input type="email" name="email" required>
+          </label>
+          <label>Имя
+            <input type="text" name="name" required minlength="2">
+          </label>
+          <label>Пароль
+            <input type="password" name="password" required minlength="6">
+          </label>
+          <button type="submit">Создать аккаунт</button>
+        </form>
+
+        <form id="loginForm" class="card">
+          <h2>Вход</h2>
+          <label>Email
+            <input type="email" name="email" required>
+          </label>
+          <label>Пароль
+            <input type="password" name="password" required>
+          </label>
+          <button type="submit">Войти</button>
+        </form>
+      </div>
+      <p class="status" id="authStatus"></p>
+    </section>
+
+    <section class="panel app hidden" id="appPanel">
+      <header class="topbar">
+        <div>
+          <h1>Мои задачи</h1>
+          <p class="hint" id="userInfo"></p>
+        </div>
+        <div class="actions">
+          <a href="/docs" target="_blank" rel="noopener">Swagger</a>
+          <button id="logoutBtn" class="ghost">Выйти</button>
+        </div>
+      </header>
+
+      <form id="taskForm" class="task-form card">
+        <h2>Новая задача</h2>
+        <label>Название
+          <input type="text" name="title" required minlength="2" maxlength="120">
+        </label>
+        <label>Описание
+          <textarea name="description" rows="3" maxlength="800"></textarea>
+        </label>
+        <label>Статус
+          <select name="status">
+            <option value="todo">todo</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+          </select>
+        </label>
+        <button type="submit">Добавить</button>
+      </form>
+
+      <section>
+        <div class="list-header">
+          <h2>Список</h2>
+          <button id="reloadBtn" class="ghost">Обновить</button>
+        </div>
+        <div id="tasks" class="tasks"></div>
+      </section>
+      <p class="status" id="taskStatus"></p>
+    </section>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

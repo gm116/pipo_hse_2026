@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: task-tracker-postgres
+    environment:
+      POSTGRES_DB: task_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d task_tracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  auth-service:
+    build:
+      context: .
+      args:
+        SERVICE: auth-service
+    environment:
+      APP_NAME: auth-service
+      PORT: 8081
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/task_tracker?sslmode=disable
+      JWT_SECRET: dev-secret-change-me
+      TOKEN_TTL_HOURS: 24
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  task-service:
+    build:
+      context: .
+      args:
+        SERVICE: task-service
+    environment:
+      APP_NAME: task-service
+      PORT: 8082
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/task_tracker?sslmode=disable
+      JWT_SECRET: dev-secret-change-me
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  gateway:
+    build:
+      context: .
+      args:
+        SERVICE: gateway
+    environment:
+      APP_NAME: gateway
+      PORT: 8080
+      LOG_LEVEL: INFO
+      AUTH_SERVICE_URL: http://auth-service:8081
+      TASK_SERVICE_URL: http://task-service:8082
+      WEB_DIR: /app/web
+      OPENAPI_PATH: /app/api/openapi.yaml
+    depends_on:
+      - auth-service
+      - task-service
+    ports:
+      - "8080:8080"
